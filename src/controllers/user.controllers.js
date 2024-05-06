@@ -10,8 +10,8 @@ import qrcode from 'qrcode'
 import {authenticator} from 'otplib'
 
 // socket io
-import io from "../index.js";
-import Activity from "../models/activity.models.js";
+// import io from "../index.js";
+// import Activity from "../models/activity.models.js";
 
 const registerUser = asyncHandler(async (req, res) => {
     // collect the info
@@ -108,20 +108,20 @@ const loginUser = async (req, res) => {
 
         // save login activity in the database
 
-        const loginActivity = new Activity({
-            userId: loggedInUser._id,
-            activityType: "login",
-            deviceInfo: req.headers['user-agent'],
-            timestamp: new Date()
-        })
+        // const loginActivity = new Activity({
+        //     userId: loggedInUser._id,
+        //     activityType: "login",
+        //     deviceInfo: req.headers['user-agent'],
+        //     timestamp: new Date()
+        // })
 
-        await loginActivity.save();
+        // await loginActivity.save();
         
-        io.emit('loginActivity', {
-            user: loggedInUser,
-            timestamp: loginActivity.timestamp,
-            deviceInfo: loginActivity.deviceInfo
-        });
+        // io.emit('loginActivity', {
+        //     user: loggedInUser,
+        //     timestamp: loginActivity.timestamp,
+        //     deviceInfo: loginActivity.deviceInfo
+        // });
     
         res.status(200)
         .json(new ApiResponse(200, {
@@ -187,18 +187,18 @@ const logoutUser = async (req, res) => {
 
         // save logout activity in the database
 
-        const logoutActivity = new Activity({
-            userId: user._id,
-            activityType: "logout",
-            timestamp: new Date()
-        });
+        // const logoutActivity = new Activity({
+        //     userId: user._id,
+        //     activityType: "logout",
+        //     timestamp: new Date()
+        // });
 
-        await logoutActivity.save();
+        // await logoutActivity.save();
 
-        io.emit('logoutActivity', {
-            user: user._id,
-            timestamp: logoutActivity.timestamp
-        });
+        // io.emit('logoutActivity', {
+        //     user: user._id,
+        //     timestamp: logoutActivity.timestamp
+        // });
         
         // res.clearCookie('token');
     
@@ -303,7 +303,7 @@ const getUser = async (req, res) => {
     try{
         const decodedUser = req.user;
     
-        // console.log(decodedUser);
+        console.log(decodedUser);
         const user = await User.findById(decodedUser._id).select('-password');
     
         res.status(200).json(new ApiResponse(200, {user}, "Current User"));
