@@ -21,7 +21,7 @@ dotenv.config({
 
 // middlewares
 const corsOptions = {
-    origin: ['https://authproject.vercel.app/'],
+    origin: 'https://authproject.vercel.app',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
