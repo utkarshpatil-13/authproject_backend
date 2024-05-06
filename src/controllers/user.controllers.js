@@ -10,8 +10,34 @@ import qrcode from 'qrcode'
 import {authenticator} from 'otplib'
 
 // socket io
-// import io from "../index.js";
-// import Activity from "../models/activity.models.js";
+import io from "../index.js";
+import Activity from "../models/activity.models.js";
+import {Server, Socket} from 'socket.io'
+
+// Map to store user ID and corresponding socket ID
+const userSocketMap = new Map();
+
+// Function to associate user ID with socket ID
+const associateSocketWithUser = (userId, socketId) => {
+    userSocketMap.set(userId, socketId);
+}
+
+const convertTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+
+    // Get the individual components of the date (year, month, day, hour, minute, second)
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // Months are zero-based, so January is 0
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+
+    // Format the date and time string as desired
+    const formattedDateTime = `${year}-${month < 10 ? '0' : ''}${month}-${day < 10 ? '0' : ''}${day} ${hours < 10 ? '0' : ''}${hours}:${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+    return formattedDateTime;
+}
 
 const registerUser = asyncHandler(async (req, res) => {
     // collect the info
@@ -106,26 +132,34 @@ const loginUser = async (req, res) => {
         const loggedInUser = await User.findById(user._id)
         .select('-password');
 
+        
         // save login activity in the database
 
-        // const loginActivity = new Activity({
-        //     userId: loggedInUser._id,
-        //     activityType: "login",
-        //     deviceInfo: req.headers['user-agent'],
-        //     timestamp: new Date()
-        // })
+        const loginActivity = new Activity({
+            userId: loggedInUser._id,
+            activityType: "login",
+            deviceInfo: req.headers['user-agent'],
+            timestamp: new Date()
+        })
 
-        // await loginActivity.save();
+        await loginActivity.save();
+
+        // Associate socket with user
         
-        // io.emit('loginActivity', {
-        //     user: loggedInUser,
-        //     timestamp: loginActivity.timestamp,
-        //     deviceInfo: loginActivity.deviceInfo
-        // });
-    
-        res.status(200)
-        .json(new ApiResponse(200, {
-            loggedInUser, 
+        io.on('connection', (socket) => {
+            associateSocketWithUser(loggedInUser._id, socket.id);
+            const formattedTime = convertTimestamp(loginActivity.timestamp);
+            socket.emit('login', {
+                userId: loggedInUser._id,
+                timestamp: formattedTime,
+                activityType: 'login',
+                deviceInfo: loginActivity.deviceInfo
+            });
+        });
+
+        // Respond to the client
+        res.status(200).json(new ApiResponse(200, {
+            loggedInUser,
             accessToken
         }, `${loggedInUser.firstname} logged in successfully!`));
     }
@@ -156,7 +190,31 @@ const twofactor = async (req, res) => {
                 throw new ApiError("Invalid Code");
             }
         }
-    
+
+        // save login activity in the database
+
+        const loginActivity = new Activity({
+            userId: user._id,
+            activityType: "login",
+            deviceInfo: req.headers['user-agent'],
+            timestamp: new Date()
+        })
+
+        await loginActivity.save();
+
+        // Associate socket with user
+        
+        io.on('connection', (socket) => {
+            associateSocketWithUser(user._id, socket.id);
+            const formattedTime = convertTimestamp(loginActivity.timestamp);
+            socket.emit('login', {
+                userId: user._id,
+                timestamp: formattedTime,
+                activityType: 'login',
+                deviceInfo: loginActivity.deviceInfo
+            });
+        });
+
         console.log(user)
     
         res.status(200).json(200, {}, "Two Factor Verified!");
@@ -187,18 +245,26 @@ const logoutUser = async (req, res) => {
 
         // save logout activity in the database
 
-        // const logoutActivity = new Activity({
-        //     userId: user._id,
-        //     activityType: "logout",
-        //     timestamp: new Date()
-        // });
+        const logoutActivity = new Activity({
+            userId: user._id,
+            activityType: "logout",
+            deviceInfo: req.headers['user-agent'],
+            timestamp: new Date()
+        });
 
-        // await logoutActivity.save();
+        await logoutActivity.save();
 
-        // io.emit('logoutActivity', {
-        //     user: user._id,
-        //     timestamp: logoutActivity.timestamp
-        // });
+        io.on('connection', (socket) => {
+            const formattedTime = convertTimestamp(logoutActivity.timestamp);
+            socket.emit('logout', {
+                userId: user._id,
+                activityType: "logout",
+                deviceInfo: req.headers['user-agent'],
+                timestamp: formattedTime
+            });
+            // if (socketId) {
+            // }
+        });
         
         // res.clearCookie('token');
     
@@ -302,6 +368,8 @@ const isVerified = asyncHandler(async (req, res) => {
 const getUser = async (req, res) => {
     try{
         const decodedUser = req.user;
+
+        // console.log("Socket ID "+ socketId);
     
         console.log(decodedUser);
         const user = await User.findById(decodedUser._id).select('-password');
