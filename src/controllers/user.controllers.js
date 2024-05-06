@@ -149,10 +149,11 @@ const loginUser = async (req, res) => {
         io.on('connection', (socket) => {
             associateSocketWithUser(loggedInUser._id, socket.id);
             const formattedTime = convertTimestamp(loginActivity.timestamp);
-            socket.emit('login', {
+            socket.to(socket.id).emit('login', {
                 userId: loggedInUser._id,
                 timestamp: formattedTime,
                 activityType: 'login',
+                username: loggedInUser.firstname,
                 deviceInfo: loginActivity.deviceInfo
             });
         });
@@ -207,10 +208,11 @@ const twofactor = async (req, res) => {
         io.on('connection', (socket) => {
             associateSocketWithUser(user._id, socket.id);
             const formattedTime = convertTimestamp(loginActivity.timestamp);
-            socket.emit('login', {
+            socket.to(socket.id).emit('login', {
                 userId: user._id,
+                username: user.firstname,
                 timestamp: formattedTime,
-                activityType: 'login',
+                activityType: 'two factor',
                 deviceInfo: loginActivity.deviceInfo
             });
         });
@@ -256,8 +258,9 @@ const logoutUser = async (req, res) => {
 
         io.on('connection', (socket) => {
             const formattedTime = convertTimestamp(logoutActivity.timestamp);
-            socket.emit('logout', {
+            socket.to(socket.id).emit('logout', {
                 userId: user._id,
+                username: user.firstname,
                 activityType: "logout",
                 deviceInfo: req.headers['user-agent'],
                 timestamp: formattedTime
