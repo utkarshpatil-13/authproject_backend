@@ -15,7 +15,7 @@ const app = express()
 const server = http.createServer(app);
 
 const io = new Server(server, {
-    cors: 'http://localhost:3000'
+    cors: 'https://authproject.vercel.app'
 });
 
 dotenv.config({
@@ -24,7 +24,7 @@ dotenv.config({
 
 // middlewares
 const corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: 'https://authproject.vercel.app',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
     methods: ['GET', 'POST', 'PUT', 'DELETE']
