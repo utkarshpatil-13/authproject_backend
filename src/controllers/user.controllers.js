@@ -149,7 +149,7 @@ const loginUser = async (req, res) => {
         io.on('connection', (socket) => {
             associateSocketWithUser(loggedInUser._id, socket.id);
             const formattedTime = convertTimestamp(loginActivity.timestamp);
-            socket.to(socket.id).emit('login', {
+            socket.emit('login', {
                 userId: loggedInUser._id,
                 timestamp: formattedTime,
                 activityType: 'login',
@@ -208,7 +208,7 @@ const twofactor = async (req, res) => {
         io.on('connection', (socket) => {
             associateSocketWithUser(user._id, socket.id);
             const formattedTime = convertTimestamp(loginActivity.timestamp);
-            socket.to(socket.id).emit('login', {
+            socket.emit('login', {
                 userId: user._id,
                 username: user.firstname,
                 timestamp: formattedTime,
@@ -258,7 +258,7 @@ const logoutUser = async (req, res) => {
 
         io.on('connection', (socket) => {
             const formattedTime = convertTimestamp(logoutActivity.timestamp);
-            socket.to(socket.id).emit('logout', {
+            socket.emit('logout', {
                 userId: user._id,
                 username: user.firstname,
                 activityType: "logout",
